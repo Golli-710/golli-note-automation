@@ -1,0 +1,19 @@
+name: Safety and data tests
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run offline tests
+        env:
+          PYTHONPATH: src
+        run: python -m unittest discover -s tests -v
+      - name: Job summary
+        if: always()
+        run: echo 'note automation offline tests completed. Live note operations are not performed by this workflow.' >> "$GITHUB_STEP_SUMMARY"

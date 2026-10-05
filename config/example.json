@@ -1,0 +1,23 @@
+{
+  "dashboard_url": "https://note.com/sitesettings/stats",
+  "new_draft_url": "https://editor.note.com/notes/new",
+  "selectors": {
+    "dashboard_marker": "",
+    "period": "",
+    "period_key": "",
+    "totals": {"impressions": null, "page_views": "", "likes": null, "comments": null, "sales_yen": null},
+    "articles_container": "",
+    "article_rows": "",
+    "article_title": "",
+    "article_link": "",
+    "article_date": null,
+    "article_metrics": {"impressions": null, "page_views": "", "likes": null, "comments": null},
+    "referrers": null,
+    "new_editor_marker": "",
+    "title_input": "",
+    "body_input": "",
+    "tags_input": null,
+    "save_draft_button": "",
+    "saved_marker": ""
+  }
+}
