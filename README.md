@@ -8,6 +8,7 @@
 - `core.py`: snapshot追記、日時重複検査、同一集計範囲の比較、記事生成、Markdownとサムネmetadata保存。
 - `cli.py`: 手動ログイン、排他制御、処理の実行、summary、GitHub Actions Job Summary出力。
 - `config/example.json`: 実画面で確認するDOM契約。未設定の必須selectorは停止します。
+- `config/dashboard.json`: 2026-10-08のアクセス状況画面で取得検証した設定（過去28日間）。新規下書き保存のselectorは未設定で、保存操作は停止します。個別記事・認証情報は含みません。
 - `tests/`: データ処理と公開防止・既存記事保護のオフラインテスト。
 - `.github/workflows/tests.yml`: 認証不要のテストのみ。note運営の定期実行は有効化していません。
 
@@ -22,7 +23,7 @@ python -m pip install --upgrade pip
 python -m pip install -e .
 export PLAYWRIGHT_BROWSERS_PATH="$PWD/.playwright-browsers"
 playwright install chromium
-cp config/example.json config/local.json
+cp config/dashboard.json config/local.json
 note-automation login
 # 実画面確認後にconfig/local.jsonのselectorを設定
 note-automation run --headed
@@ -41,16 +42,16 @@ note-automation run --headed --save-note
 5. `new_editor_marker`は新規画面を肯定的に識別する要素にする。保存ボタンは表示文言が完全一致で「下書き保存」のものだけ対応。`saved_marker`は保存前には存在せず、保存成功後に出現する一意の確認表示を指定する。自動保存のみのUIや公開設定内の操作には対応しない。
 6. `tags_input`は下書き画面で直接入力できる欄だけ設定する。公開設定を開く必要がある場合nullとし、metadataを見て人間がタグを設定する。
 
-実画面未検証のため、初回のselector調整とnote保存の確認は必須です。画面が変わった場合も同様です。
+アクセス状況の取得は2026-10-08に実画面で検証済みです。環境に応じたselector調整とnote保存の確認は必要です。画面が変わった場合も同様です。
 
 ## 保存物と安全性
 
-- `data/note_metrics.json`: 過去履歴を保持して追記。日時重複は追加しない。同じ日時で内容が異なる場合はエラー。
+- `data/note_metrics.json`: 過去履歴を保持して追記。日時重複は追加しない。同じ日時で内容が異なる場合はエラー。noteの集計時刻・期間・集計方式が同じ場合も重複を防止し、値が矛盾する場合は停止。
 - `drafts/YYYY-MM-DD-<snapshot-id>.md`: title、created_at、source_metrics、tags、statusをfrontmatterに保存。
 - 同名の`.metadata.json`: タイトル候補5個、見出し、テーマ、選択理由、仮説、次回KPI、thumbnail_text、thumbnail_prompt。
 - `logs/summary.json` / `summary.md`: 実績、差分、分析、テーマ、タイトル、仮説、KPI、下書き保存結果、人間の確認項目。`GITHUB_STEP_SUMMARY`があれば同じ内容を追記。
 
-欠損はnull、非数値や不明瞭な表示、要素の欠落・重複は停止します。正常取得後の後段失敗では既に取得したsnapshotとローカル下書きを保持します。集計期間が異なる差分と新規記事の増減はnull。PV / impressionsは厳密なCTRとは呼びません。
+未表示項目と明示的な「-」はnull、その他の非数値や不明瞭な表示、要素の欠落・重複は停止します。カードの数値表示を待ち、記事の列見出しと取得前後の集計時刻を確認します。同じ集計の再実行では保存済みの記事metadataを再利用します。正常取得後の後段失敗では既に取得したsnapshotとローカル下書きを保持します。集計期間が異なる差分と新規記事の増減はnull。PV / impressionsは厳密なCTRとは呼びません。
 
 記事生成は外部LLM不要のルールベース方式です。実データに基づくA（結果）/B（試す施策）/C（計測実験）/D（記録ノウハウ）の選択を行いますが、実施済み施策を入力する仕組みはまだありません。したがってB/Cは次の試行案として記述し、実施結果や成功を作りません。外部LLMや画像生成は未接続で、生成関数とmetadataを接続点にできます。
 
@@ -67,3 +68,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
 実noteへのアクセスと保存成功は、ログイン済み環境と実DOM契約が必要なため別途確認してください。
+
+## 実動作確認（2026-10-08）
+
+ログイン後の実績取得、snapshot・Markdown・metadata・summary保存、および同じ集計の再実行による重複防止を確認しました。初回比較はnullです。コメント・売上の「-」は0と解釈せずnullとし、画面に表示のない流入元もnullにしています。note下書き保存は別途ユーザー了承と実画面確認が必要です。認証情報・実績データ・生成記事はcommitしていません。

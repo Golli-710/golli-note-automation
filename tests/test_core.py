@@ -34,6 +34,21 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(len(history), 2)
             self.assertEqual(history[0], first[0])
 
+    def test_source_aggregation_dedup(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / 'metrics.json'
+            first = sample()
+            first.update(source='note_rendered_dom', source_aggregated_at='2026/10/5 12:00 集計')
+            append_snapshot(path, first)
+            second = copy.deepcopy(first)
+            second['collected_at'] = '2026-10-05T01:00:00+00:00'
+            history, added = append_snapshot(path, second)
+            self.assertFalse(added)
+            self.assertEqual(len(history), 1)
+            second['totals']['page_views'] = 99
+            with self.assertRaises(ValueError):
+                append_snapshot(path, second)
+
     def test_comparison(self):
         before, after = sample(), sample()
         after['totals']['page_views'] = 15

@@ -36,6 +36,13 @@ def append_snapshot(path, snapshot):
     history = json.loads(path.read_text()) if path.exists() else []
     if not isinstance(history, list):
         raise ValueError('History must be a list')
+    if snapshot.get('source_aggregated_at'):
+        for existing in history:
+            if all(existing.get(k) == snapshot.get(k) for k in ('source', 'source_aggregated_at', 'period', 'period_key')):
+                fields = ('totals', 'articles', 'referrers')
+                if any(existing.get(k) != snapshot.get(k) for k in fields):
+                    raise ValueError('Conflicting values for the same source aggregation time')
+                return history, False
     digest = hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     if any(s['collected_at'] == snapshot['collected_at'] for s in history):
         if any({k: v for k, v in s.items() if k != 'snapshot_id'} == snapshot for s in history):

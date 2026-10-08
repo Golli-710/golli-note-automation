@@ -1,5 +1,5 @@
 import unittest
-from note_automation.browser import save_note, SafetyError
+from note_automation.browser import save_note, metric, SafetyError
 
 
 class Locator:
@@ -39,6 +39,15 @@ def config(url='https://editor.note.com/notes/new'):
 
 
 class BrowserSafetyTests(unittest.IsolatedAsyncioTestCase):
+    async def test_explicit_missing_metric(self):
+        self.assertIsNone(await metric(Page(button='-'), 'button'))
+        self.assertEqual(await metric(Page(button='0'), 'button'), 0)
+        self.assertEqual(await metric(Page(button='1,234'), 'button'), 1234)
+        with self.assertRaises(ValueError):
+            await metric(Page(button='約12'), 'button')
+        with self.assertRaises(SafetyError):
+            await metric(Page(), 'saved')
+
     async def test_publish_labels_never_clicked(self):
         for label in ['公開する', '投稿する', '公開設定', '下書き保存して公開する']:
             page = Page(button=label)

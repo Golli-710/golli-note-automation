@@ -31,14 +31,24 @@ async def text(root, selector):
 
 
 async def metric(root, selector):
-    return number(await text(root, selector)) if selector else None
+    if not selector:
+        return None
+    value = await text(root, selector)
+    return None if value == '-' else number(value)
 
 
 async def collect(page, config):
     s = config['selectors']
     await page.goto(note_url(config['dashboard_url']), wait_until='domcontentloaded')
     note_url(page.url)
+    if not s['dashboard_marker']:
+        raise SafetyError('Dashboard marker not configured')
+    await page.locator(s['dashboard_marker']).wait_for(state='visible', timeout=15000)
     await unique(page, s['dashboard_marker'])
+    if s.get('ready_marker'):
+        await page.locator(s['ready_marker']).wait_for(state='visible', timeout=15000)
+        await unique(page, s['ready_marker'])
+    aggregated_at = await text(page, s['aggregated_at']) if s.get('aggregated_at') else None
     period = await text(page, s['period'])
     period_key = await text(page, s['period_key'])
     totals = {k: await metric(page, s['totals'].get(k)) for k in METRICS}
@@ -47,6 +57,10 @@ async def collect(page, config):
     container = await unique(page, s['articles_container'])
     if not s['article_rows']:
         raise SafetyError('Article row selector missing')
+    if s.get('article_headers'):
+        actual = [(await cell.inner_text()).strip() for cell in await container.locator('thead th').all()]
+        if actual != s['article_headers']:
+            raise SafetyError('Article column headers changed')
     rows = container.locator(s['article_rows'])
     if await rows.count() == 0:
         raise SafetyError('No article rows; cannot distinguish empty data from DOM change')
@@ -62,7 +76,9 @@ async def collect(page, config):
         articles.append(dict(id=url, title=await text(row, s['article_title']), published_at=await text(row, s['article_date']) if s.get('article_date') else None, **{k: await metric(row, s['article_metrics'].get(k)) for k in METRICS}))
     if len({a['id'] for a in articles}) != len(articles):
         raise SafetyError('Duplicate article identities')
-    return {'collected_at': now(), 'period': period, 'period_key': period_key, 'source': 'note_rendered_dom', 'totals': totals, 'articles': articles, 'referrers': await text(page, s['referrers']) if s.get('referrers') else None}
+    if s.get('aggregated_at') and await text(page, s['aggregated_at']) != aggregated_at:
+        raise SafetyError('Aggregation changed during collection')
+    return {'collected_at': now(), 'period': period, 'period_key': period_key, 'source': 'note_rendered_dom', 'source_aggregated_at': aggregated_at, 'totals': totals, 'articles': articles, 'referrers': await text(page, s['referrers']) if s.get('referrers') else None}
 
 
 async def save_note(page, config, article):

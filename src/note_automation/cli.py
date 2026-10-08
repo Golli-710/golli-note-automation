@@ -43,6 +43,9 @@ async def execute(args):
                 comparison = compare(current, history[-2] if len(history) > 1 else None)
                 previous = json.loads(Path('data/editorial.json').read_text()) if Path('data/editorial.json').exists() else {}
                 article = generate(current, comparison, previous.get('category'))
+                metadata = Path('drafts') / (current['collected_at'][:10] + '-' + current['snapshot_id'][:12] + '.metadata.json')
+                if not added and metadata.exists():
+                    article = json.loads(metadata.read_text())
                 draft = save_draft('drafts', current, article)
                 summary.update(snapshot=current, comparison=comparison, analysis=article['reason'], theme=article['theme'], recommended_title=article['title'], hypothesis=article['hypothesis'], next_kpi=article['next_kpi'], markdown=str(draft), snapshot_added=added)
                 if args.save_note:

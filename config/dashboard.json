@@ -1,0 +1,45 @@
+{
+  "dashboard_url": "https://note.com/dashboard",
+  "new_draft_url": "https://editor.note.com/notes/new",
+  "selectors": {
+    "dashboard_marker": "main table:has(th:has-text(\"タイトル\")) tbody tr:first-child",
+    "period": "main p:text-matches(\"^[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}〜[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}$\")",
+    "period_key": "main button:has-text(\"過去28日間\")",
+    "totals": {
+      "impressions": "main div.border:has(> div > p:text-is(\"インプレッション\")) > div > p.text-2xl",
+      "page_views": "main div.border:has(> div > p:text-is(\"ページビュー\")) > div > p.text-2xl",
+      "likes": "main div.border:has(> div > p:text-is(\"スキ\")) > div > p.text-2xl",
+      "comments": "main div.border:has(> div > p:text-is(\"コメント\")) > div > p.text-2xl",
+      "sales_yen": "main div.border:has(> div > p:text-is(\"売上\")) > div > p.text-2xl"
+    },
+    "articles_container": "main table:has(th:has-text(\"タイトル\"))",
+    "article_rows": "tbody tr",
+    "article_title": "td:first-child a",
+    "article_link": "td:first-child a",
+    "article_date": "td:first-child span:text-matches(\"^[0-9]{4}年[0-9]{1,2}月[0-9]{1,2}日$\")",
+    "article_metrics": {
+      "impressions": "td:nth-child(2)",
+      "page_views": "td:nth-child(3)",
+      "likes": "td:nth-child(4)",
+      "comments": "td:nth-child(5)",
+      "sales_yen": "td:nth-child(6)"
+    },
+    "referrers": null,
+    "new_editor_marker": "",
+    "title_input": "",
+    "body_input": "",
+    "tags_input": null,
+    "save_draft_button": "",
+    "saved_marker": "",
+    "aggregated_at": "[data-testid=\"last-aggregated-at\"]",
+    "article_headers": [
+      "タイトル",
+      "インプレッション",
+      "ページビュー",
+      "スキ",
+      "コメント",
+      "売上"
+    ],
+    "ready_marker": "main div.border:has(> div > p:text-is(\"インプレッション\")) > div > p.text-2xl:text-matches(\"^[0-9,]+$\")"
+  }
+}
