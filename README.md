@@ -69,6 +69,14 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 
 実noteへのアクセスと保存成功は、ログイン済み環境と実DOM契約が必要なため別途確認してください。
 
+## 確認済みの本文を保存する場合
+
+新規記事の入口は、note画面上で確認した `https://note.com/notes/new` です。旧URLの `https://editor.note.com/notes/new` はアクセス拒否になるため使用しません。
+
+`--reviewed-metadata drafts/<記事>.metadata.json` を指定すると、編集済みのローカル記事を使います。source_metricsが今回のsnapshotと異なる場合は停止します。改稿した本文はその版への了承を得てから `--save-note` を付けて保存します。
+
+`verify_persisted_draft: true` を設定した場合、保存直後に新規作成された記事を別ページで読み取り、タイトル・本文を照合します。検証ページでは入力・クリックを行いません。この方式の実note保存成功はまだ未確認です。現状は本文をプレーンテキストで入力するため、見出し・リスト書式とタグは公開前に人間が確認します。
+
 ## 実動作確認（2026-10-08）
 
 ログイン後の実績取得、snapshot・Markdown・metadata・summary保存、および同じ集計の再実行による重複防止を確認しました。初回比較はnullです。コメント・売上の「-」は0と解釈せずnullとし、画面に表示のない流入元もnullにしています。note下書き保存は別途ユーザー了承と実画面確認が必要です。認証情報・実績データ・生成記事はcommitしていません。
