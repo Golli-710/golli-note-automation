@@ -46,6 +46,11 @@ async def execute(args):
                 metadata = Path('drafts') / (current['collected_at'][:10] + '-' + current['snapshot_id'][:12] + '.metadata.json')
                 if not added and metadata.exists():
                     article = json.loads(metadata.read_text())
+                if args.reviewed_metadata:
+                    reviewed = json.loads(Path(args.reviewed_metadata).read_text())
+                    if reviewed.get('source_metrics') != current['snapshot_id']:
+                        raise RuntimeError('Reviewed draft references different metrics; review new observations before saving')
+                    article = reviewed
                 draft = save_draft('drafts', current, article)
                 summary.update(snapshot=current, comparison=comparison, analysis=article['reason'], theme=article['theme'], recommended_title=article['title'], hypothesis=article['hypothesis'], next_kpi=article['next_kpi'], markdown=str(draft), snapshot_added=added)
                 if args.save_note:
@@ -84,6 +89,7 @@ def main():
     parser.add_argument('--config', default='config/local.json')
     parser.add_argument('--headed', action='store_true')
     parser.add_argument('--save-note', action='store_true')
+    parser.add_argument('--reviewed-metadata', help='Use a reviewed local article; must reference the current snapshot')
     args = parser.parse_args()
     try:
         asyncio.run(execute(args))

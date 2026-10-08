@@ -12,14 +12,15 @@ class Locator:
     async def inner_text(self):
         return self.page.button if self.selector == 'button' else ''
     async def evaluate(self, script):
-        return self.page.existing if self.selector == 'title' else ''
+        return self.page.values.get(self.selector, self.page.existing if self.selector == 'title' else '')
     async def fill(self, value):
         self.page.fills.append(self.selector)
+        self.page.values[self.selector] = value
     async def click(self):
         self.page.clicks.append(self.selector)
         self.page.saved = True
     async def wait_for(self, **kwargs):
-        if not self.page.saved:
+        if self.selector == 'saved' and not self.page.saved:
             raise TimeoutError()
 
 
@@ -27,9 +28,15 @@ class Page:
     def __init__(self, button='下書き保存', existing=''):
         self.button, self.existing = button, existing
         self.saved = False
+        self.values = {}
+        self.redirect = None
         self.clicks, self.fills = [], []
     async def goto(self, url, **kwargs):
-        self.url = url
+        self.url = self.redirect or url
+    async def wait_for_timeout(self, ms):
+        pass
+    async def close(self):
+        pass
     def locator(self, selector):
         return Locator(self, selector)
 
@@ -70,6 +77,42 @@ class BrowserSafetyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result['status'], 'success')
         self.assertEqual(page.clicks, ['button'])
         self.assertEqual(page.fills, ['title', 'body'])
+
+    async def test_persisted_verification_is_read_only(self):
+        page = Page()
+        page.redirect = 'https://editor.note.com/notes/naabb/edit/'
+        check = Page()
+        check.values = {'title': 'a', 'body': 'b'}
+        class Context:
+            async def new_page(self):
+                return check
+        page.context = Context()
+        c = config('https://note.com/notes/new')
+        c['verify_persisted_draft'] = True
+        c['selectors']['saved_marker'] = None
+        result = await save_note(page, c, {'title': 'a', 'body': 'b'})
+        self.assertEqual(result['status'], 'success')
+        self.assertEqual(page.clicks, ['button'])
+        self.assertEqual(check.fills, [])
+        self.assertEqual(check.clicks, [])
+        page = Page()
+        page.redirect = 'https://editor.note.com/notes/naabb/edit/'
+        page.context = Context()
+        check.values['body'] = 'wrong stored content'
+        with self.assertRaises(SafetyError):
+            await save_note(page, c, {'title': 'a', 'body': 'b'})
+        self.assertEqual(page.clicks, ['button'])
+
+    async def test_unexpected_editor_url_prevents_input(self):
+        page = Page()
+        page.redirect = 'https://editor.note.com/notes/old/edit/'
+        c = config()
+        c['verify_persisted_draft'] = True
+        c['selectors']['saved_marker'] = None
+        with self.assertRaises(SafetyError):
+            await save_note(page, c, {'title': 'a', 'body': 'b'})
+        self.assertEqual(page.fills, [])
+        self.assertEqual(page.clicks, [])
 
     async def test_missing_contract_stops(self):
         c = config()

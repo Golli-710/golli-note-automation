@@ -1,6 +1,6 @@
 {
   "dashboard_url": "https://note.com/dashboard",
-  "new_draft_url": "https://editor.note.com/notes/new",
+  "new_draft_url": "https://note.com/notes/new",
   "selectors": {
     "dashboard_marker": "main table:has(th:has-text(\"タイトル\")) tbody tr:first-child",
     "period": "main p:text-matches(\"^[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}〜[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}$\")",

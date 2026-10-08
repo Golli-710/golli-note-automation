@@ -89,6 +89,9 @@ async def save_note(page, config, article):
     await page.goto(url, wait_until='domcontentloaded')
     note_url(page.url)
     # The configured marker MUST positively identify an empty new editor.
+    if not s['new_editor_marker']:
+        raise SafetyError('New editor marker not configured')
+    await page.locator(s['new_editor_marker']).wait_for(state='visible', timeout=15000)
     await unique(page, s['new_editor_marker'])
     title = await unique(page, s['title_input'])
     body = await unique(page, s['body_input'])
@@ -99,10 +102,16 @@ async def save_note(page, config, article):
     button = await unique(page, s['save_draft_button'])
     if (await button.inner_text()).strip() != '下書き保存':
         raise SafetyError('Only exact 下書き保存 is allowed')
-    if not s.get('saved_marker'):
+    verify_persisted = config.get('verify_persisted_draft', False)
+    if not s.get('saved_marker') and not verify_persisted:
         raise SafetyError('Saved marker not configured')
-    if await page.locator(s['saved_marker']).count():
+    if s.get('saved_marker') and await page.locator(s['saved_marker']).count():
         raise SafetyError('Saved marker must not exist before saving')
+    created_url = note_url(page.url)
+    if verify_persisted:
+        import re
+        if not re.fullmatch(r'/notes/n[0-9a-f]+/edit/?', urlparse(created_url).path):
+            raise SafetyError('Unexpected new draft editor URL')
     await title.fill(article['title'])
     await body.fill(article['body'])
     # Tags are entered only if a draft-only tag field has been verified.
@@ -113,6 +122,22 @@ async def save_note(page, config, article):
     if (await button.inner_text()).strip() != '下書き保存':
         raise SafetyError('Draft save action changed')
     await button.click()
-    await page.locator(s['saved_marker']).wait_for(state='visible', timeout=15000)
-    await unique(page, s['saved_marker'])
-    return {'status': 'success', 'url': note_url(page.url)}
+    if verify_persisted:
+        await page.wait_for_timeout(1500)
+        # A fresh page reads this newly created draft; no fill or click here.
+        check = await page.context.new_page()
+        try:
+            await check.goto(created_url, wait_until='domcontentloaded')
+            if check.url != created_url:
+                raise SafetyError('Draft verification redirected unexpectedly')
+            await check.locator(s['title_input']).wait_for(state='visible', timeout=15000)
+            stored_title = await content(await unique(check, s['title_input']))
+            stored_body = await content(await unique(check, s['body_input']))
+            if stored_title != article['title'] or stored_body.strip() != article['body'].strip():
+                raise SafetyError('Persisted draft content does not match; do not retry automatically')
+        finally:
+            await check.close()
+    else:
+        await page.locator(s['saved_marker']).wait_for(state='visible', timeout=15000)
+        await unique(page, s['saved_marker'])
+    return {'status': 'success', 'url': created_url}
