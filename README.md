@@ -18,7 +18,9 @@ Python 3.9以上を使用します。
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+python -m pip install --upgrade pip
+python -m pip install -e .
+export PLAYWRIGHT_BROWSERS_PATH="$PWD/.playwright-browsers"
 playwright install chromium
 cp config/example.json config/local.json
 note-automation login

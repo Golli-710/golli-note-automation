@@ -17,3 +17,5 @@ logs/
 config/local.json
 playwright-report/
 test-results/
+
+.playwright-browsers/
